@@ -142,6 +142,13 @@ if ($virtualMachine) {
     throw "Unable to find Virtual Machine in the task resource group. Please make sure that your script creates a virtual machine and try again."
 }
 
+if ($virtualMachine.identity.type -eq "SystemAssigned") { 
+    Write-Output "`u{2705} Checked if VM has system-assigned identity enabled - OK."
+} else { 
+    Write-Output `u{1F914}
+    throw "Unable to verify that VM has system-assigned mannaged identity enabled. Please check if you are enabling the system-assigned mannaged identity on the VM and try again."
+}
+
 $nic = ( $TemplateObject.resources | Where-Object -Property type -EQ "Microsoft.Network/networkInterfaces")
 if ($nic) {
     if ($nic.name.Count -eq 1) { 
@@ -215,11 +222,11 @@ if ($extention.properties.type -eq "CustomScript") {
 }
 
 if ($extention.properties.settings.fileUris[0]) { 
-    if (-not $extention.properties.settings.fileUris[0].Contains("https://raw.githubusercontent.com/mate-academy/")) { 
+    if ($extention.properties.settings.fileUris[0].Contains("https://raw.githubusercontent.com/")) { 
         Write-Output "`u{2705} Checked the VM extention script URI - OK."
     } else { 
         Write-Output `u{1F914}
-        throw "Unable to verify the script URL in the extention settings. Please make sure that you are using script from your own fork for the extention and try again."
+        throw "Unable to verify the script URL in the extention settings. Please make sure that your custom script extention loads the app install script from the github and try again."
     }
  } else { 
     Write-Output `u{1F914}
@@ -240,11 +247,29 @@ if ($dcr) {
 }
 
 
-
-
-$response = (Invoke-WebRequest -Uri "http://$($pip.properties.dnsSettings.fqdn):8080/api/" -ErrorAction SilentlyContinue) 
+# Check the log of Azure Monitor Agent on the VM to make sure that VM 
+# loaded data collection rule and started sending the OS-level metrics. 
+# To access the log, I am creating a symlink at a todoapp startup (see script: azure_task_13_vm_monitoring/app/start.sh)
+$response = (Invoke-WebRequest -Uri "http://$($pip.properties.dnsSettings.fqdn):8080/static/files/azuremonitoragent/log/mdsd.info" -ErrorAction SilentlyContinue -SkipHttpErrorCheck) 
 if ($response) { 
     Write-Output "`u{2705} Checked if the web application is running - OK"
+    
+    if ($response.StatusCode -eq 404) { 
+        throw "Unable to verify that the new version of the todo app was deployed to the VM. Please make sure that you deployed the new version of the application to the server, check if Azure Monitor Extention was installed to the VM and running, and try to re-run validation script again."
+    }
+
+    if ($response.StatusCode -ne 200) { 
+        throw "Unexpected error, unable to verify that the web app is configured properly. Please check the configuration of your web application and ensure, that the HTTP request to the following URL returnts HTTP status code 200 and try to re-run validation script again: http://$($pip.properties.dnsSettings.fqdn):8080/static/files/azuremonitoragent/log/mdsd.info"
+    }
+
+    $taskLogContent = [System.Text.Encoding]::UTF8.GetString($response.Content)
+
+    if ($taskLogContent.Contains("Loaded Azure Monitor configuration dcr")) { 
+        Write-Output "`u{2705} Checked if Azure Monitor Agend started sending metrics to Azure Monitor - OK"
+    } else { 
+        throw "Unable to verify that Azure Monitor Agent is sending metrics to Azure Monitor. Please check if guest OS metrics are already available (they should appear in 10-20 minutes after you installed Azure Monitor Agent and created data collection rule) and try to re-run the validation again."
+    }
+
 } else {
     throw "Unable to get a reponse from the web app. Please make sure that the VM and web application are running and try again."
 }

@@ -1,8 +1,8 @@
-# Create a Virtual Machine with Powershell
+# Monitor Virtual Machine
 
-VMs are deployed with the script, you can deploy as many VMs as you need just by updating one script variable, but you still need to connect to the VM with SSH and install the app manually. Well, today we are going to fix it! 
+Do you use a proper virtual machine size to run your web application? The only way to check it is to analyse the VM metrics. As you already know, host-level metrics are available out-of-the-box, but for the OS-level metrics, like RAM or disk space usage, you need to do some extra steps. 
 
-In this task you will learn how to use VM extention to automate deployment of your app to the VM. The result script will allow you to deploy a VM and install the todo web app to it without any manuall actions, only by running the Powershell script. 
+In this task you will practice monitoring OS-level metrics for Azure Virtual Machines. 
 
 ## How to complete tasks in this module 
 
@@ -58,26 +58,24 @@ If you are a Windows user, before running this command, please also run the foll
 
 ## Requirements
 
-In this task, you will need to write and run a Powershell script, which deploys a virtual machines and uses custom script VM extention to deploy a web app:  
+In this task, you will need to configure and check OS-level mertics for Azure Virtual Machine. To complete the task, you need to perform the following steps: 
 
-1. Write your script code to the file `task.ps1` in this repository:
-    
-    - In script, you should assume that you are already logged in to Azure and using correct subscription (don't use commands 'Connect-AzAccount' and 'Set-AzContext', if needed - just run them on your computer before running the script). 
+1. Review the Powershell script `task.ps1`, which deploys virtual machine and installs the todo web app on it. Update the script to prepare the VM which it deploys for collecting OS-level metrics: 
 
-    - Script already have code, which deploys a VM. Update the code so it will deploy a web app from this repo using a custom script VM extention. 
+    - Enable a system-assigned identity for the VM. To learn how to do that, check the documentation of [New-AzVM](https://learn.microsoft.com/en-us/powershell/module/az.compute/new-azvm?view=azps-11.5.0) comandlet. 
 
-    - To deploy an extention, use [Set-AzVMExtention](https://learn.microsoft.com/en-us/azure/virtual-machines/extensions/features-linux?tabs=azure-powershell#azure-powershell-1) comandlet. 
+    - [Deploy](https://learn.microsoft.com/en-us/azure/azure-monitor/agents/azure-monitor-agent-manage?tabs=azure-powershell#system-assigned-managed-identity) Azure Monitor Agent using Powershell to the VM. 
 
-    - Extention should run a script `install-app.sh`, which should be loaded from your fork of this repo. In your for, the script will be available by the URL: `https://raw.githubusercontent.com/<your-github-username>/azure_task_12_deploy_app_with_vm_extention/main/install-app.sh`
+2. Run the updated `task.ps1` script to create a cloud infrastructure for the web app. 
 
-    - Make sure to review and update script `install-app.sh` - it should clone your fork of this repo to the VM. Take a note, that as `install-app.sh` will be downloaded by your VM from the GitHub, you need to commit and push changes to it before running the Powershell code which deploys the extention. 
+3. In the task resource group (`mate-azure-task-13`) [create a Data Collection Rule](https://learn.microsoft.com/en-us/azure/azure-monitor/vm/tutorial-monitor-vm-guest), which collects VM guest OS metrics and send them to Azure Monitor. After you created the rule, wait 10-20 minutes for the Azure Monitor Agent to start sending metrics to Azure Monitor. 
 
-2. When script is ready, run it to deploy resources to your subcription. Make sure that script is working without errors, and that application is available on port 8080 after you run the script. To verify that web application is running, open in a web browser the following URL: `http://<your-public-ip-DNS-name>:8080`.
+4. Verify that metrics are available for your VM. 
 
-3. Run artifacts generation script `scripts/generate-artifacts.ps1`.
+5. Run artifacts generation script `scripts/generate-artifacts.ps1`.
 
-4. Test yourself using the script `scripts/validate-artifacts.ps1`.
+6. Test yourself using the script `scripts/validate-artifacts.ps1`.
 
-5. Make sure that changes to both `task.ps1` and `result.json` are commited to the repo, and sumbit the solution for a review. 
+7. Make sure that changes to both `task.ps1` and `result.json` are commited to the repo, and sumbit the solution for a review. 
 
-6. When solution is validated, delete resources you deployed with the powershell script - you won't need them for the next tasks. 
+8. When solution is validated, delete resources you deployed with the Powershell script - you won't need them for the next tasks. 

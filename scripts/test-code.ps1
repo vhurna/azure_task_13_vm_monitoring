@@ -35,3 +35,15 @@ if ($scriptContent | Where-Object {$_.Contains("Set-AzVMExtension")}) {
 } else { 
     throw "Script is not creating a VM extention resource with a Set-AzVMExtension comandled, please review it. "
 } 
+
+if ($scriptContent | Where-Object {$_.Contains("-SystemAssignedIdentity")}) {
+    Write-Host "Checking if script enables system-assigned mannaged identity on the VM - ok" 
+} else { 
+    throw "Script is enabling system-assigned mannaged identity on the VM, please review it. "
+} 
+
+if ($scriptContent | Where-Object {$_.Contains("AzureMonitorLinuxAgent")}) {
+    Write-Host "Checking if script installs Azure Monitor Agent - ok" 
+} else { 
+    throw "Script is not installing Azure Monitor Agent extention to the VM, please review it. "
+} 

@@ -21,13 +21,18 @@ $nsgRuleSSH = New-AzNetworkSecurityRuleConfig -Name SSH  -Protocol Tcp -Directio
 $nsgRuleHTTP = New-AzNetworkSecurityRuleConfig -Name HTTP  -Protocol Tcp -Direction Inbound -Priority 1002 -SourceAddressPrefix * -SourcePortRange * -DestinationAddressPrefix * -DestinationPortRange 8080 -Access Allow;
 New-AzNetworkSecurityGroup -Name $networkSecurityGroupName -ResourceGroupName $resourceGroupName -Location $location -SecurityRules $nsgRuleSSH, $nsgRuleHTTP
 
+Write-Host "Creating a virtual network ..."
 $subnet = New-AzVirtualNetworkSubnetConfig -Name $subnetName -AddressPrefix $subnetAddressPrefix
 New-AzVirtualNetwork -Name $virtualNetworkName -ResourceGroupName $resourceGroupName -Location $location -AddressPrefix $vnetAddressPrefix -Subnet $subnet
 
+Write-Host "Creating a SSH key ..."
 New-AzSshKey -Name $sshKeyName -ResourceGroupName $resourceGroupName -PublicKey $sshKeyPublicKey
 
+Write-Host "Creating a Public IP Address ..."
 New-AzPublicIpAddress -Name $publicIpAddressName -ResourceGroupName $resourceGroupName -Location $location -Sku Basic -AllocationMethod Dynamic -DomainNameLabel $dnsLabel
 
+Write-Host "Creating a VM ..."
+# Update the VM deployment command to enable a system-assigned mannaged identity on it. 
 New-AzVm `
 -ResourceGroupName $resourceGroupName `
 -Name $vmName `
@@ -37,10 +42,9 @@ New-AzVm `
 -SubnetName $subnetName `
 -VirtualNetworkName $virtualNetworkName `
 -SecurityGroupName $networkSecurityGroupName `
--SshKeyName $sshKeyName  -PublicIpAddressName $publicIpAddressName `
--SystemAssignedIdentity # enabling the system assigned identity is part of the task
+-SshKeyName $sshKeyName  -PublicIpAddressName $publicIpAddressName
 
-# install app
+Write-Host "Installing the TODO web app..."
 $Params = @{
     ResourceGroupName  = $resourceGroupName
     VMName             = $vmName
@@ -50,16 +54,6 @@ $Params = @{
     TypeHandlerVersion = '2.1'
     Settings          = @{fileUris = @('https://raw.githubusercontent.com/mate-academy/azure_task_13_vm_monitoring/main/install-app.sh'); commandToExecute = './install-app.sh'}
 }
- 
 Set-AzVMExtension @Params
 
-# Task code 
-
-# 1. Deploy Azure Monitor Agent https://learn.microsoft.com/en-us/azure/azure-monitor/agents/azure-monitor-agent-manage?tabs=azure-powershell#install 
-Set-AzVMExtension -Name AzureMonitorLinuxAgent -ExtensionType AzureMonitorLinuxAgent -Publisher Microsoft.Azure.Monitor -ResourceGroupName $resourceGroupName -VMName $vmName -Location $location -TypeHandlerVersion '1.30' -EnableAutomaticUpgrade $true
-
-
-# Task requirements: 
-# 1. Install system-assigned mannaged identity 
-# 2. Intall Azure Monitor Agent 
-# 3. Create data collection rules via Azure Portal 
+# Install Azure Monitor Agent VM extention -> 
