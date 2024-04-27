@@ -5,7 +5,7 @@ param(
 
 
 # default script values 
-$taskName = "task12"
+$taskName = "task13"
 
 $artifactsConfigPath = "$PWD/artifacts.json"
 $resourcesTemplateName = "exported-template.json"
@@ -225,6 +225,22 @@ if ($extention.properties.settings.fileUris[0]) {
     Write-Output `u{1F914}
     throw "Unable to verify the script URL in the extention settings. Please make sure that you are setting the script URI when deploying the extention."
 }
+
+$dcr = ( $TemplateObject.resources | Where-Object -Property type -EQ "Microsoft.Insights/dataCollectionRules")
+if ($dcr) {
+    if ($dcr.name.Count -eq 1) { 
+        Write-Output "`u{2705} Checked if the data collection rule exists - OK"
+    }  else { 
+        Write-Output `u{1F914}
+        throw "More than one Azure Monitor Data Collection rule was found in the VM resource group. Please delete all un-used data collection rules and try again."
+    }
+} else {
+    Write-Output `u{1F914}
+    throw "Unable to find Azure Monitor Data Collection Rule in the task resource group. Please make sure that you created a data collection rule for the VM and again."
+}
+
+
+
 
 $response = (Invoke-WebRequest -Uri "http://$($pip.properties.dnsSettings.fqdn):8080/api/" -ErrorAction SilentlyContinue) 
 if ($response) { 

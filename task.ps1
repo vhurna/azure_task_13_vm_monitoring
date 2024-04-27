@@ -37,8 +37,10 @@ New-AzVm `
 -SubnetName $subnetName `
 -VirtualNetworkName $virtualNetworkName `
 -SecurityGroupName $networkSecurityGroupName `
--SshKeyName $sshKeyName  -PublicIpAddressName $publicIpAddressName
+-SshKeyName $sshKeyName  -PublicIpAddressName $publicIpAddressName `
+-SystemAssignedIdentity # enabling the system assigned identity is part of the task
 
+# install app
 $Params = @{
     ResourceGroupName  = $resourceGroupName
     VMName             = $vmName
@@ -50,4 +52,14 @@ $Params = @{
 }
  
 Set-AzVMExtension @Params
- 
+
+# Task code 
+
+# 1. Deploy Azure Monitor Agent https://learn.microsoft.com/en-us/azure/azure-monitor/agents/azure-monitor-agent-manage?tabs=azure-powershell#install 
+Set-AzVMExtension -Name AzureMonitorLinuxAgent -ExtensionType AzureMonitorLinuxAgent -Publisher Microsoft.Azure.Monitor -ResourceGroupName $resourceGroupName -VMName $vmName -Location $location -TypeHandlerVersion '1.30' -EnableAutomaticUpgrade $true
+
+
+# Task requirements: 
+# 1. Install system-assigned mannaged identity 
+# 2. Intall Azure Monitor Agent 
+# 3. Create data collection rules via Azure Portal 
